@@ -1,9 +1,11 @@
-const CACHE_NAME = "cardquest-pwa-v4";
+const CACHE_NAME = "cardquest-pwa-v5";
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
   "./styles.css",
   "./manifest.json",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
   "./js/data.js",
   "./js/storage.js",
   "./js/blue-detector.js",

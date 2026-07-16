@@ -67,14 +67,14 @@
     function drawFish(graphic, fish) {
       const c = state.palette.fish;
       graphic.clear();
-      graphic.beginFill(c, 0.14 + fish.depth * 0.08);
-      graphic.drawEllipse(0, 0, fish.size * 0.9, fish.size * 0.34);
+      graphic.beginFill(c, 0.1 + fish.depth * 0.1);
+      graphic.drawEllipse(0, 0, fish.size * (0.72 + fish.depth * 0.28), fish.size * (0.26 + fish.depth * 0.12));
       graphic.endFill();
-      graphic.beginFill(c, 0.18 + fish.depth * 0.1);
+      graphic.beginFill(c, 0.14 + fish.depth * 0.12);
       graphic.drawPolygon([
-        -fish.size * 0.7, 0,
-        -fish.size * 1.2, -fish.size * 0.16,
-        -fish.size * 1.2, fish.size * 0.16,
+        -fish.size * 0.58, 0,
+        -fish.size * 0.98, -fish.size * 0.16,
+        -fish.size * 0.98, fish.size * 0.16,
       ]);
       graphic.endFill();
       graphic.beginFill(0xffffff, 0.45);
@@ -95,14 +95,6 @@
       graphic.endFill();
     }
 
-    function drawMist(graphic, mist) {
-      const c = state.palette.mist;
-      graphic.clear();
-      graphic.beginFill(c, mist.alpha);
-      graphic.drawEllipse(mist.x, mist.y, mist.rx, mist.ry);
-      graphic.endFill();
-    }
-
     function seedEntities() {
       beamLayer.removeChildren();
       fishLayer.removeChildren();
@@ -110,55 +102,55 @@
       mistLayer.removeChildren();
       flashLayer.removeChildren();
 
-      const count = Math.max(18, Math.floor((canvas.clientWidth * canvas.clientHeight) / 3000));
+      const count = Math.max(28, Math.floor((canvas.clientWidth * canvas.clientHeight) / 2200));
       state.specks = Array.from({ length: count }, () => ({
         x: Math.random() * canvas.clientWidth,
         y: Math.random() * canvas.clientHeight,
         vx: -0.08 + Math.random() * 0.16,
         vy: -0.02 + Math.random() * 0.04,
-        size: 0.5 + Math.random() * 1.7,
-        alpha: 0.06 + Math.random() * 0.18,
+        size: 0.5 + Math.random() * 2,
+        alpha: 0.05 + Math.random() * 0.16,
         phase: Math.random() * Math.PI * 2,
       }));
 
-      state.beams = Array.from({ length: 4 }, (_, index) => {
+      state.beams = Array.from({ length: 5 }, (_, index) => {
         const graphic = new PIXI.Graphics();
         beamLayer.addChild(graphic);
         return {
           graphic,
-          x: canvas.clientWidth * (0.18 + index * 0.2 + Math.random() * 0.04),
-          width: canvas.clientWidth * (0.28 + Math.random() * 0.08),
+          x: canvas.clientWidth * (0.12 + index * 0.18 + Math.random() * 0.05),
+          width: canvas.clientWidth * (0.24 + Math.random() * 0.12),
           height: canvas.clientHeight,
-          alpha: 0.04 + Math.random() * 0.08,
+          alpha: 0.03 + Math.random() * 0.08,
           sway: 0.0005 + Math.random() * 0.0015,
         };
       });
 
-      state.bubbles = Array.from({ length: 26 }, () => {
+      state.bubbles = Array.from({ length: 34 }, () => {
         const graphic = new PIXI.Graphics();
         bubbleLayer.addChild(graphic);
         return {
           graphic,
           x: Math.random() * canvas.clientWidth,
           y: canvas.clientHeight + Math.random() * canvas.clientHeight * 0.6,
-          size: 2 + Math.random() * 10,
-          speed: 0.25 + Math.random() * 0.9,
+          size: 2 + Math.random() * 12,
+          speed: 0.22 + Math.random() * 1,
           wobble: Math.random() * Math.PI * 2,
-          alpha: 0.16 + Math.random() * 0.28,
+          alpha: 0.14 + Math.random() * 0.3,
         };
       });
 
-      state.fish = Array.from({ length: 6 }, (_, index) => {
+      state.fish = Array.from({ length: 8 }, () => {
         const graphic = new PIXI.Graphics();
         fishLayer.addChild(graphic);
         return {
           graphic,
-          x: canvas.clientWidth * (0.08 + Math.random() * 0.84),
-          y: canvas.clientHeight * (0.2 + Math.random() * 0.55),
-          size: 18 + Math.random() * 36,
-          speed: 0.06 + Math.random() * 0.2,
+          x: canvas.clientWidth * (0.05 + Math.random() * 0.88),
+          y: canvas.clientHeight * (0.12 + Math.random() * 0.66),
+          size: 16 + Math.random() * 40,
+          speed: 0.05 + Math.random() * 0.18,
           dir: Math.random() > 0.5 ? 1 : -1,
-          depth: 0.2 + Math.random() * 0.8,
+          depth: 0.15 + Math.random() * 0.85,
           wave: Math.random() * Math.PI * 2,
           drift: Math.random() * 0.3,
         };
@@ -242,15 +234,15 @@
 
       for (const fish of state.fish) {
         fish.x += fish.speed * fish.dir;
-        fish.y += Math.sin(time * 0.0015 + fish.wave) * (0.18 + fish.depth * 0.22);
+        fish.y += Math.sin(time * 0.0015 + fish.wave) * (0.16 + fish.depth * 0.24);
         if (fish.x < -fish.size * 2) fish.x = w + fish.size * 2;
         if (fish.x > w + fish.size * 2) fish.x = -fish.size * 2;
         drawFish(fish.graphic, fish);
         fish.graphic.x = fish.x;
         fish.graphic.y = fish.y;
-        fish.graphic.scale.set(0.75 + fish.depth * 0.45);
+        fish.graphic.scale.set(0.7 + fish.depth * 0.52);
         fish.graphic.rotation = fish.dir < 0 ? Math.PI : 0;
-        fish.graphic.alpha = 0.14 + fish.depth * 0.14 + state.pulse * 0.04;
+        fish.graphic.alpha = 0.12 + fish.depth * 0.16 + state.pulse * 0.04;
       }
 
       for (let i = 0; i < mistLayer.children.length; i += 1) {
@@ -258,8 +250,8 @@
         const wobble = Math.sin(time * 0.0008 + i) * 18;
         mist.x = w * (0.08 + (i * 0.13) % 0.82) + wobble;
         mist.y = h * (0.12 + (i % 4) * 0.12) + Math.cos(time * 0.0006 + i) * 12;
-        mist.scale.set(1 + Math.sin(time * 0.0007 + i) * 0.04);
-        mist.alpha = 0.05 + state.pulse * 0.05;
+        mist.scale.set(1 + Math.sin(time * 0.0007 + i) * 0.06);
+        mist.alpha = 0.06 + state.pulse * 0.06;
       }
 
       if (state.flashGraphic) {

@@ -24,6 +24,9 @@
     spotLabel: document.getElementById("spotLabel"),
     bubbles: document.getElementById("bubbles"),
     sceneRipple: document.getElementById("sceneRipple"),
+    catchCutin: document.getElementById("catchCutin"),
+    cutinFishName: document.getElementById("cutinFishName"),
+    cutinSpotName: document.getElementById("cutinSpotName"),
   };
 
   const state = {
@@ -33,7 +36,11 @@
     currentSpot: data.spots[0],
     rodTarget: 0.5,
     rodPosition: 0.5,
+    cameraTilt: 0,
+    cameraShiftX: 0,
+    cameraShiftY: 0,
     isStarting: false,
+    cutinTimer: null,
     game: {
       active: false,
       spotId: null,
@@ -80,6 +87,47 @@
     els.sceneRipple.classList.remove("active");
     void els.sceneRipple.offsetWidth;
     els.sceneRipple.classList.add("active");
+  }
+
+  function updateCameraMotion() {
+    const sway = (state.rodPosition - 0.5) * 18;
+    const bob = Math.sin(Date.now() * 0.0012) * (state.game.active ? 1.6 : 0.8);
+    state.cameraTilt = sway * 0.06;
+    state.cameraShiftX = sway * 0.22;
+    state.cameraShiftY = bob;
+
+    els.fishingStage.style.setProperty("--camera-shift-x", `${state.cameraShiftX}px`);
+    els.fishingStage.style.setProperty("--camera-shift-y", `${state.cameraShiftY}px`);
+    els.fishingStage.style.setProperty("--camera-tilt", `${state.cameraTilt}deg`);
+  }
+
+  function showCatchCutin(spot, fish) {
+    if (!els.catchCutin) {
+      return;
+    }
+
+    if (state.cutinTimer !== null) {
+      window.clearTimeout(state.cutinTimer);
+    }
+
+    els.cutinFishName.textContent = fish.name;
+    els.cutinSpotName.textContent = spot.name;
+    els.catchCutin.classList.remove("hidden");
+
+    state.cutinTimer = window.setTimeout(() => {
+      els.catchCutin.classList.add("hidden");
+      state.cutinTimer = null;
+    }, 1100);
+  }
+
+  function teardownCamera() {
+    stopMonitoring();
+    if (state.stream) {
+      for (const track of state.stream.getTracks()) {
+        track.stop();
+      }
+      state.stream = null;
+    }
   }
 
   function renderCollection() {
