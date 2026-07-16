@@ -1,0 +1,10 @@
+{
+  "name": "CardQuest",
+  "short_name": "CardQuest",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#07111c",
+  "theme_color": "#0c1016",
+  "description": "Camera-driven card quest fishing game.",
+  "icons": []
+}
