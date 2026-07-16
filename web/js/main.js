@@ -23,6 +23,7 @@
     pixiCanvas: document.getElementById("pixiCanvas"),
     spotLabel: document.getElementById("spotLabel"),
     bubbles: document.getElementById("bubbles"),
+    sceneRipple: document.getElementById("sceneRipple"),
   };
 
   const state = {
@@ -32,11 +33,21 @@
     currentSpot: data.spots[0],
     rodTarget: 0.5,
     rodPosition: 0.5,
-    game: { active: false, spotId: null, targetHits: 0, hits: 0 },
+    isStarting: false,
+    game: {
+      active: false,
+      spotId: null,
+      targetHits: 0,
+      hits: 0,
+    },
   };
 
-  const ocean = oceanScene.createOceanScene(els.oceanCanvas, { defaultSpot: state.currentSpot });
-  const visualLayer = pixiEffects.createOceanOverlay(els.pixiCanvas, { defaultSpot: state.currentSpot });
+  const ocean = oceanScene.createOceanScene(els.oceanCanvas, {
+    defaultSpot: state.currentSpot,
+  });
+  const visualLayer = pixiEffects.createOceanOverlay(els.pixiCanvas, {
+    defaultSpot: state.currentSpot,
+  });
   const ambient = audio.createOceanAudio();
   const motionController = motion.createMotionController({
     onChange(value) {
@@ -59,6 +70,16 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
+  }
+
+  function triggerRipple() {
+    if (!els.sceneRipple) {
+      return;
+    }
+
+    els.sceneRipple.classList.remove("active");
+    void els.sceneRipple.offsetWidth;
+    els.sceneRipple.classList.add("active");
   }
 
   function renderCollection() {
@@ -85,7 +106,7 @@
           <div class="card">
             <strong>${escapeHtml(spot?.name ?? row.spotId)}</strong> で
             <strong>${escapeHtml(caughtFish?.name ?? `Fish ${row.fishId}`)}</strong>
-            を釣った
+            を釣りました。
             <div>${new Date(row.caughtAt).toLocaleString("ja-JP")}</div>
           </div>
         `;
@@ -119,6 +140,7 @@
     ocean.pulse(strength);
     visualLayer.pulse(strength);
     ambient.pulse(strength);
+    triggerRipple();
   }
 
   function updateMeter() {
@@ -139,10 +161,12 @@
       } else {
         weight = item.rarity === "common" ? 20 : item.rarity === "rare" ? 40 : 24;
       }
+
       for (let index = 0; index < weight; index += 1) {
         weighted.push(item);
       }
     }
+
     return weighted[Math.floor(Math.random() * weighted.length)];
   }
 
@@ -161,7 +185,7 @@
     state.game.hits = 0;
 
     els.reelBtn.disabled = false;
-    els.gamePrompt.textContent = `${spot.name} に移動した。竿を上下して、静かにタイミングを合わせよう。`;
+    els.gamePrompt.textContent = `${spot.name} に入りました。竿をゆっくり合わせて、リズムよく巻いてみましょう。`;
     els.motionHint.textContent = `竿の位置: ${Math.round(state.rodPosition * 100)}%`;
     updateStageAppearance(spot);
     pulseScene(0.8 + spot.targetBoost * 0.2);
@@ -176,15 +200,20 @@
 
     state.game.spotId = spot.id;
     updateStageAppearance(spot);
-    els.gamePrompt.textContent = `${spot.name} に水の色が変わった。`;
+    els.gamePrompt.textContent = `${spot.name} に海の色が変わりました。`;
     pulseScene(0.5);
   }
 
   function resetGame() {
-    state.game = { active: false, spotId: null, targetHits: 0, hits: 0 };
+    state.game = {
+      active: false,
+      spotId: null,
+      targetHits: 0,
+      hits: 0,
+    };
     els.reelBtn.disabled = true;
     els.gameStatus.textContent = "待機中";
-    els.gamePrompt.textContent = "青いものを映すと、やさしく釣り場が切り替わります。";
+    els.gamePrompt.textContent = "青いものが映ると、やさしく釣り場が切り替わります。";
     els.motionHint.textContent = "竿の位置: 50%";
     updateStageAppearance(state.currentSpot);
     pulseScene(0.3);
@@ -203,10 +232,10 @@
 
     if (success) {
       state.game.hits += 1;
-      els.gamePrompt.textContent = "ふわっと手応えが来た。";
+      els.gamePrompt.textContent = "ふわっと手応えがありました。";
       pulseScene(0.25);
     } else {
-      els.gamePrompt.textContent = "少しだけ波に乗れなかった。";
+      els.gamePrompt.textContent = "少しだけ外れました。もう一度合わせてみましょう。";
     }
 
     updateMeter();
@@ -215,7 +244,7 @@
       const caughtFish = chooseFishForSpot(spot);
       saveCatch(spot, caughtFish);
       renderCollection();
-      els.gamePrompt.textContent = `${spot.name} で ${caughtFish.name} をやさしく釣り上げた。`;
+      els.gamePrompt.textContent = `${spot.name} で ${caughtFish.name} をやさしく釣り上げました。`;
       pulseScene(1.15);
       ambient.playCatch();
       state.game.active = false;
@@ -258,14 +287,22 @@
       updateStageAppearance(spot);
     }
 
-    els.cameraStatus.textContent = `青色を検出: ${spot.name}`;
+    els.cameraStatus.textContent = `青を検知: ${spot.name}`;
     els.cameraStatus.style.color = "var(--accent-strong)";
   }
 
   async function startCamera() {
-    if (state.stream) {
+    if (state.stream || state.isStarting) {
       return;
     }
+
+    state.isStarting = true;
+    els.enableCameraBtn.disabled = true;
+    els.cameraStatus.textContent = "カメラ準備中";
+    els.cameraStatus.style.color = "var(--muted)";
+
+    const audioStart = ambient.start();
+    const motionStart = motionController.start(els.fishingStage);
 
     try {
       state.stream = await navigator.mediaDevices.getUserMedia({
@@ -275,17 +312,22 @@
 
       els.cameraVideo.srcObject = state.stream;
       await els.cameraVideo.play().catch(() => {});
-      els.cameraStatus.textContent = "カメラ起動中";
-      els.cameraStatus.style.color = "var(--accent-strong)";
+
       ocean.start();
       visualLayer.start();
-      await ambient.start();
       startMonitoring();
-      await motionController.start(els.fishingStage);
+      updateStageAppearance(state.currentSpot);
+      els.cameraStatus.textContent = "カメラ起動中";
+      els.cameraStatus.style.color = "var(--accent-strong)";
+
+      await Promise.allSettled([audioStart, motionStart]);
     } catch (error) {
-      els.cameraStatus.textContent = "カメラを使えません";
+      els.cameraStatus.textContent = "カメラを起動できませんでした";
       els.cameraStatus.style.color = "#ff8e97";
       console.error(error);
+    } finally {
+      state.isStarting = false;
+      els.enableCameraBtn.disabled = false;
     }
   }
 
@@ -340,7 +382,7 @@
     }
 
     bubbleContainer.innerHTML = "";
-    for (let index = 0; index < 14; index += 1) {
+    for (let index = 0; index < 18; index += 1) {
       const bubble = document.createElement("span");
       bubble.className = "bubble";
       const size = 6 + Math.random() * 20;
@@ -379,7 +421,7 @@
       syncRod();
       requestAnimationFrame(tick);
     });
-    els.cameraStatus.textContent = "未起動";
+    els.cameraStatus.textContent = "カメラ待機中";
     els.motionHint.textContent = "竿の位置: 50%";
   }
 

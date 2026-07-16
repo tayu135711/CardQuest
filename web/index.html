@@ -13,7 +13,7 @@
   <body>
     <main class="app-shell">
       <section class="ocean-shell">
-        <div class="ocean-backdrop">
+        <div class="ocean-backdrop" aria-hidden="true">
           <div class="caustics caustics-a"></div>
           <div class="caustics caustics-b"></div>
           <div class="bubbles" id="bubbles"></div>
@@ -24,10 +24,10 @@
         <header class="hero">
           <p class="eyebrow">CardQuest / Underwater Calm</p>
           <div class="hero-copy">
-            <h1>水中にいるみたいな、やさしい釣りの時間</h1>
+            <h1>水中にいるような、やさしい釣りの時間</h1>
             <p class="lede">
-              青いものが見えたら釣り場が変わり、スマホを上下すると竿がゆらぎます。
-              画面全体を、ふわっとした海の空気で包みます。
+              スマホのカメラを主役にして、映り込む青いものをきっかけに釣り場がゆるやかに切り替わります。
+              画面全体を海の気配で包み込みながら、癒し系のAR風体験に寄せています。
             </p>
           </div>
           <div class="hero-actions">
@@ -42,18 +42,23 @@
             <div class="panel-header">
               <div>
                 <h2>Fishing Scene</h2>
-                <p class="section-caption">釣り場が切り替わると水の色も少し変化します。</p>
+                <p class="section-caption">カメラの映像の上に、水中フィルタと海の演出を重ねています。</p>
               </div>
-              <span id="cameraStatus" class="status">未起動</span>
+              <span id="cameraStatus" class="status">カメラ待機中</span>
             </div>
 
             <div class="fishing-stage" id="fishingStage">
-              <canvas id="pixiCanvas" class="pixi-canvas"></canvas>
+              <video id="cameraVideo" autoplay playsinline muted></video>
+              <canvas id="scanCanvas" class="hidden"></canvas>
               <canvas id="oceanCanvas" class="ocean-canvas"></canvas>
+              <canvas id="pixiCanvas" class="pixi-canvas"></canvas>
+
+              <div class="camera-film"></div>
               <div class="water-surface"></div>
               <div class="water-rays"></div>
               <div class="water-particles"></div>
               <div class="water-glow"></div>
+              <div class="water-fog"></div>
               <div class="spot-label" id="spotLabel">釣り場: 未選択</div>
               <div class="fish-shadow fish-shadow-a"></div>
               <div class="fish-shadow fish-shadow-b"></div>
@@ -64,6 +69,7 @@
                 <div class="lure"></div>
               </div>
               <div class="focus-ring"></div>
+              <div class="scene-ripple" id="sceneRipple"></div>
             </div>
 
             <div class="scene-footer">
@@ -77,42 +83,23 @@
               </div>
             </div>
 
-            <p id="gamePrompt" class="game-prompt">
-              青いものを映すと釣り場が切り替わります。
-            </p>
+            <p id="gamePrompt" class="game-prompt">青いものが映ると、やさしく釣り場が切り替わります。</p>
             <p id="motionHint" class="motion-hint">竿の位置: 50%</p>
             <div class="reel-meter">
               <div id="meterFill" class="meter-fill"></div>
             </div>
           </article>
 
-          <aside class="side-stack">
-            <article class="panel gentle-panel">
-              <div class="panel-header">
-                <div>
-                  <h2>Collection</h2>
-                  <p class="section-caption">釣れた魚の記録です。</p>
-                </div>
-                <span id="collectionSummary" class="status">0件</span>
+          <article class="panel gentle-panel collection-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Collection</h2>
+                <p class="section-caption">釣れた魚の記録です。</p>
               </div>
-              <div id="collectionList" class="collection-list"></div>
-            </article>
-
-            <article class="panel sensor-panel">
-              <div class="panel-header">
-                <div>
-                  <h2>Sensor</h2>
-                  <p class="section-caption">カメラは判定用の裏側センサーとして使います。</p>
-                </div>
-              </div>
-              <div class="camera-frame compact">
-                <video id="cameraVideo" autoplay playsinline muted></video>
-                <canvas id="scanCanvas" class="hidden"></canvas>
-                <div class="reticle"></div>
-              </div>
-              <p class="hint">青い物体を枠に入れて「青を探す」を押してください。</p>
-            </article>
-          </aside>
+              <span id="collectionSummary" class="status">0釣り場 / 0魚</span>
+            </div>
+            <div id="collectionList" class="collection-list"></div>
+          </article>
         </section>
       </section>
     </main>
