@@ -289,6 +289,16 @@ h1 {
   display: block;
 }
 
+.pixi-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
 .fishing-stage::before {
   content: "";
   position: absolute;

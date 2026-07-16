@@ -48,6 +48,7 @@
             </div>
 
             <div class="fishing-stage" id="fishingStage">
+              <canvas id="pixiCanvas" class="pixi-canvas"></canvas>
               <canvas id="oceanCanvas" class="ocean-canvas"></canvas>
               <div class="water-surface"></div>
               <div class="water-rays"></div>
@@ -121,10 +122,13 @@
       <button id="installBtn">追加</button>
     </div>
 
+    <script defer src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.min.js"></script>
     <script defer src="./js/data.js"></script>
     <script defer src="./js/storage.js"></script>
     <script defer src="./js/blue-detector.js"></script>
     <script defer src="./js/ocean-scene.js"></script>
+    <script defer src="./js/pixi-effects.js"></script>
     <script defer src="./js/audio.js"></script>
     <script defer src="./js/motion.js"></script>
     <script defer src="./js/main.js"></script>

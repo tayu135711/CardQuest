@@ -20,7 +20,8 @@ The browser app lives in [`web/`](./web/).
 - `web/styles.css` - underwater UI and layout
 - `web/js/data.js` - spots and fish data
 - `web/js/ocean-scene.js` - animated ocean canvas
-- `web/js/audio.js` - ambient underwater audio
+- `web/js/pixi-effects.js` - PixiJS overlay effects
+- `web/js/audio.js` - Tone.js soundscape
 - `web/js/motion.js` - tilt and pointer rod control
 - `web/js/blue-detector.js` - blue-object detection
 - `web/js/storage.js` - local save handling

@@ -1,5 +1,5 @@
 (function (global) {
-  const { data, storage, blueDetector, oceanScene, audio, motion } = global.CardQuest;
+  const { data, storage, blueDetector, oceanScene, pixiEffects, audio, motion } = global.CardQuest;
 
   const els = {
     enableCameraBtn: document.getElementById("enableCameraBtn"),
@@ -20,7 +20,9 @@
     collectionList: document.getElementById("collectionList"),
     fishingStage: document.getElementById("fishingStage"),
     oceanCanvas: document.getElementById("oceanCanvas"),
+    pixiCanvas: document.getElementById("pixiCanvas"),
     spotLabel: document.getElementById("spotLabel"),
+    bubbles: document.getElementById("bubbles"),
   };
 
   const state = {
@@ -34,6 +36,7 @@
   };
 
   const ocean = oceanScene.createOceanScene(els.oceanCanvas, { defaultSpot: state.currentSpot });
+  const visualLayer = pixiEffects.createOceanOverlay(els.pixiCanvas, { defaultSpot: state.currentSpot });
   const ambient = audio.createOceanAudio();
   const motionController = motion.createMotionController({
     onChange(value) {
@@ -99,12 +102,14 @@
     els.spotLabel.textContent = `釣り場: ${spot.name}`;
     els.gameStatus.textContent = state.game.active ? `釣り中 - ${spot.mood}` : `待機中 - ${spot.mood}`;
     ocean.setSpot(spot);
+    visualLayer.setSpot(spot);
     ambient.setSpot(spot);
   }
 
   function syncRod() {
     state.rodPosition += (state.rodTarget - state.rodPosition) * 0.12;
     ocean.setRodPosition(state.rodPosition);
+    visualLayer.setRodPosition(state.rodPosition);
     const offset = (state.rodPosition - 0.5) * 42;
     els.motionHint.textContent = `竿の位置: ${Math.round(state.rodPosition * 100)}%`;
     els.fishingStage.style.setProperty("--rod-offset", `${offset}%`);
@@ -112,6 +117,7 @@
 
   function pulseScene(strength = 1) {
     ocean.pulse(strength);
+    visualLayer.pulse(strength);
     ambient.pulse(strength);
   }
 
@@ -120,42 +126,6 @@
       ? Math.min(100, (state.game.hits / state.game.targetHits) * 100)
       : 0;
     els.meterFill.style.width = `${percent}%`;
-  }
-
-  function beginFishing(spot, bluePresence) {
-    state.game.active = true;
-    state.game.spotId = spot.id;
-    state.game.targetHits = 2 + spot.targetBoost + Math.floor(Math.random() * 3);
-    state.game.hits = 0;
-
-    els.reelBtn.disabled = false;
-    els.gamePrompt.textContent = `${spot.name} に移動した。竿を上下して、静かにタイミングを合わせよう。`;
-    els.motionHint.textContent = `竿の位置: ${Math.round(state.rodPosition * 100)}%`;
-    updateStageAppearance(spot);
-    pulseScene(0.8 + spot.targetBoost * 0.2);
-    updateMeter();
-  }
-
-  function shiftFishingSpot(spot) {
-    if (state.game.spotId === spot.id) {
-      updateStageAppearance(spot);
-      return;
-    }
-    state.game.spotId = spot.id;
-    updateStageAppearance(spot);
-    els.gamePrompt.textContent = `${spot.name} に水の色が変わった。`;
-    pulseScene(0.5);
-  }
-
-  function resetGame() {
-    state.game = { active: false, spotId: null, targetHits: 0, hits: 0 };
-    els.reelBtn.disabled = true;
-    els.gameStatus.textContent = "待機中";
-    els.gamePrompt.textContent = "青いものを映すと、やさしく釣り場が切り替わります。";
-    els.motionHint.textContent = "竿の位置: 50%";
-    updateStageAppearance(state.currentSpot);
-    pulseScene(0.3);
-    updateMeter();
   }
 
   function chooseFishForSpot(spot) {
@@ -184,8 +154,47 @@
     });
   }
 
+  function beginFishing(spot) {
+    state.game.active = true;
+    state.game.spotId = spot.id;
+    state.game.targetHits = 2 + spot.targetBoost + Math.floor(Math.random() * 3);
+    state.game.hits = 0;
+
+    els.reelBtn.disabled = false;
+    els.gamePrompt.textContent = `${spot.name} に移動した。竿を上下して、静かにタイミングを合わせよう。`;
+    els.motionHint.textContent = `竿の位置: ${Math.round(state.rodPosition * 100)}%`;
+    updateStageAppearance(spot);
+    pulseScene(0.8 + spot.targetBoost * 0.2);
+    updateMeter();
+  }
+
+  function shiftFishingSpot(spot) {
+    if (state.game.spotId === spot.id) {
+      updateStageAppearance(spot);
+      return;
+    }
+
+    state.game.spotId = spot.id;
+    updateStageAppearance(spot);
+    els.gamePrompt.textContent = `${spot.name} に水の色が変わった。`;
+    pulseScene(0.5);
+  }
+
+  function resetGame() {
+    state.game = { active: false, spotId: null, targetHits: 0, hits: 0 };
+    els.reelBtn.disabled = true;
+    els.gameStatus.textContent = "待機中";
+    els.gamePrompt.textContent = "青いものを映すと、やさしく釣り場が切り替わります。";
+    els.motionHint.textContent = "竿の位置: 50%";
+    updateStageAppearance(state.currentSpot);
+    pulseScene(0.3);
+    updateMeter();
+  }
+
   function reel() {
-    if (!state.game.active) return;
+    if (!state.game.active) {
+      return;
+    }
 
     const spot = state.currentSpot;
     const alignment = 1 - Math.min(1, Math.abs(state.rodPosition - 0.5) * 2);
@@ -208,6 +217,7 @@
       renderCollection();
       els.gamePrompt.textContent = `${spot.name} で ${caughtFish.name} をやさしく釣り上げた。`;
       pulseScene(1.15);
+      ambient.playCatch();
       state.game.active = false;
       els.reelBtn.disabled = true;
     }
@@ -215,7 +225,10 @@
 
   function captureFrame() {
     const video = els.cameraVideo;
-    if (!video.videoWidth || !video.videoHeight) return null;
+    if (!video.videoWidth || !video.videoHeight) {
+      return null;
+    }
+
     const canvas = els.scanCanvas;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -227,6 +240,7 @@
   function analyzeCameraFrame(autoStart) {
     const imageData = captureFrame();
     const bluePresence = blueDetector.detectBluePresence(imageData);
+
     if (!bluePresence) {
       if (autoStart) {
         els.cameraStatus.textContent = "青いものを探しています";
@@ -237,7 +251,7 @@
 
     const spot = blueDetector.pickSpot(bluePresence, data.spots);
     if (!state.game.active && autoStart) {
-      beginFishing(spot, bluePresence);
+      beginFishing(spot);
     } else if (state.game.active) {
       shiftFishingSpot(spot);
     } else {
@@ -249,18 +263,23 @@
   }
 
   async function startCamera() {
-    if (state.stream) return;
+    if (state.stream) {
+      return;
+    }
+
     try {
       state.stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: "environment" } },
         audio: false,
       });
+
       els.cameraVideo.srcObject = state.stream;
       await els.cameraVideo.play().catch(() => {});
       els.cameraStatus.textContent = "カメラ起動中";
       els.cameraStatus.style.color = "var(--accent-strong)";
-      ambient.start();
       ocean.start();
+      visualLayer.start();
+      await ambient.start();
       startMonitoring();
       await motionController.start(els.fishingStage);
     } catch (error) {
@@ -271,7 +290,10 @@
   }
 
   function startMonitoring() {
-    if (state.monitorTimer !== null) return;
+    if (state.monitorTimer !== null) {
+      return;
+    }
+
     state.monitorTimer = window.setInterval(() => {
       analyzeCameraFrame(true);
     }, 450);
@@ -285,7 +307,10 @@
   }
 
   function registerServiceWorker() {
-    if (!("serviceWorker" in navigator)) return;
+    if (!("serviceWorker" in navigator)) {
+      return;
+    }
+
     navigator.serviceWorker.register("./sw.js").catch((error) => {
       console.warn("Service worker registration failed", error);
     });
@@ -298,7 +323,10 @@
   }
 
   async function installApp() {
-    if (!state.deferredInstallPrompt) return;
+    if (!state.deferredInstallPrompt) {
+      return;
+    }
+
     state.deferredInstallPrompt.prompt();
     await state.deferredInstallPrompt.userChoice;
     state.deferredInstallPrompt = null;
@@ -306,10 +334,13 @@
   }
 
   function createBubbles() {
-    const bubbleContainer = document.getElementById("bubbles");
-    if (!bubbleContainer) return;
+    const bubbleContainer = els.bubbles;
+    if (!bubbleContainer) {
+      return;
+    }
+
     bubbleContainer.innerHTML = "";
-    for (let index = 0; index < 18; index += 1) {
+    for (let index = 0; index < 14; index += 1) {
       const bubble = document.createElement("span");
       bubble.className = "bubble";
       const size = 6 + Math.random() * 20;

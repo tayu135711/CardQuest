@@ -1,134 +1,114 @@
 (function (global) {
   function createOceanAudio() {
-    let context = null;
-    let master = null;
-    let lowOsc = null;
-    let highOsc = null;
+    if (!global.Tone) {
+      return {
+        start() { return Promise.resolve(); },
+        setSpot() {},
+        pulse() {},
+        playCatch() {},
+        stop() {},
+      };
+    }
+
+    const palettes = {
+      pond: { chord: ["C3", "E3", "G3"], noise: 0.012, filter: 210 },
+      river: { chord: ["Bb2", "D3", "F3"], noise: 0.013, filter: 185 },
+      sea: { chord: ["A2", "C3", "E3"], noise: 0.015, filter: 160 },
+    };
+
+    let started = false;
     let noise = null;
+    let noiseFilter = null;
     let noiseGain = null;
-    let textureGain = null;
-    let initialized = false;
-
-    function ensureContext() {
-      if (context) return context;
-      context = new (window.AudioContext || window.webkitAudioContext)();
-      master = context.createGain();
-      master.gain.value = 0.02;
-      master.connect(context.destination);
-      return context;
-    }
-
-    function createNoiseBuffer() {
-      const buffer = context.createBuffer(1, context.sampleRate * 2, context.sampleRate);
-      const channel = buffer.getChannelData(0);
-      for (let i = 0; i < channel.length; i += 1) {
-        channel[i] = (Math.random() * 2 - 1) * 0.25;
-      }
-      return buffer;
-    }
+    let pad = null;
+    let padFilter = null;
+    let padReverb = null;
+    let chime = null;
+    let currentPalette = palettes.sea;
 
     async function start() {
-      ensureContext();
-      if (initialized) {
-        if (context.state === "suspended") await context.resume();
+      if (started) {
+        await global.Tone.start();
         return;
       }
 
-      if (context.state === "suspended") {
-        await context.resume();
-      }
+      await global.Tone.start();
 
-      lowOsc = context.createOscillator();
-      lowOsc.type = "sine";
-      lowOsc.frequency.value = 32;
+      padReverb = new global.Tone.Reverb({ decay: 10, wet: 0.42 });
+      await padReverb.generate();
 
-      const lowFilter = context.createBiquadFilter();
-      lowFilter.type = "lowpass";
-      lowFilter.frequency.value = 120;
+      padFilter = new global.Tone.Filter(180, "lowpass");
+      pad = new global.Tone.PolySynth(global.Tone.Synth, {
+        oscillator: { type: "sine" },
+        envelope: { attack: 1.8, decay: 1.2, sustain: 0.58, release: 5 },
+      });
+      pad.chain(padFilter, padReverb, global.Tone.Destination);
 
-      const lowGain = context.createGain();
-      lowGain.gain.value = 0.018;
+      noiseFilter = new global.Tone.Filter(currentPalette.filter, "lowpass");
+      noiseGain = new global.Tone.Gain(currentPalette.noise);
+      noise = new global.Tone.Noise("pink").start();
+      noise.chain(noiseFilter, noiseGain, padReverb);
 
-      lowOsc.connect(lowFilter);
-      lowFilter.connect(lowGain);
-      lowGain.connect(master);
+      chime = new global.Tone.PolySynth(global.Tone.Synth, {
+        oscillator: { type: "triangle" },
+        envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 1.6 },
+      }).connect(padReverb);
 
-      highOsc = context.createOscillator();
-      highOsc.type = "triangle";
-      highOsc.frequency.value = 216;
-
-      const highFilter = context.createBiquadFilter();
-      highFilter.type = "bandpass";
-      highFilter.frequency.value = 660;
-      highFilter.Q.value = 0.6;
-
-      const highGain = context.createGain();
-      highGain.gain.value = 0.004;
-
-      highOsc.connect(highFilter);
-      highFilter.connect(highGain);
-      highGain.connect(master);
-
-      noise = context.createBufferSource();
-      noise.buffer = createNoiseBuffer();
-      noise.loop = true;
-
-      const noiseFilter = context.createBiquadFilter();
-      noiseFilter.type = "lowpass";
-      noiseFilter.frequency.value = 280;
-      noiseFilter.Q.value = 0.9;
-
-      noiseGain = context.createGain();
-      noiseGain.gain.value = 0.012;
-
-      textureGain = context.createGain();
-      textureGain.gain.value = 0.006;
-
-      noise.connect(noiseFilter);
-      noiseFilter.connect(noiseGain);
-      noiseGain.connect(textureGain);
-      textureGain.connect(master);
-
-      lowOsc.start();
-      highOsc.start();
-      noise.start();
-      initialized = true;
+      started = true;
+      pad.triggerAttack(currentPalette.chord);
     }
 
     function setSpot(spot) {
-      if (!master || !context) return;
-      master.gain.setTargetAtTime(0.02 + (spot.targetBoost * 0.003), context.currentTime, 0.1);
-      if (lowOsc) {
-        lowOsc.frequency.setTargetAtTime(30 + spot.targetBoost * 2, context.currentTime, 0.15);
+      currentPalette = palettes[spot.id] || palettes.sea;
+      if (padFilter) {
+        padFilter.frequency.rampTo(currentPalette.filter, 0.8);
       }
-      if (highOsc) {
-        highOsc.frequency.setTargetAtTime(200 + spot.targetBoost * 12, context.currentTime, 0.15);
+      if (noiseFilter) {
+        noiseFilter.frequency.rampTo(currentPalette.filter + 45, 0.8);
+      }
+      if (noiseGain) {
+        noiseGain.gain.rampTo(currentPalette.noise, 0.8);
+      }
+      if (pad) {
+        pad.triggerAttackRelease(currentPalette.chord, "2m");
       }
     }
 
     function pulse(intensity = 1) {
-      if (!context || !textureGain) return;
-      textureGain.gain.cancelScheduledValues(context.currentTime);
-      textureGain.gain.setTargetAtTime(0.006 + intensity * 0.009, context.currentTime, 0.05);
+      if (noiseGain) {
+        noiseGain.gain.rampTo(currentPalette.noise + intensity * 0.01, 0.08);
+      }
+      if (padFilter) {
+        padFilter.frequency.rampTo(currentPalette.filter + intensity * 40, 0.08);
+      }
+    }
+
+    function playCatch() {
+      if (!chime) {
+        return;
+      }
+      chime.triggerAttackRelease(["C5", "E5", "G5", "B5"], "8n");
+      if (padFilter) {
+        padFilter.frequency.rampTo(currentPalette.filter + 90, 0.14);
+      }
     }
 
     function stop() {
-      try {
-        lowOsc?.stop();
-        highOsc?.stop();
-        noise?.stop();
-      } catch {}
-      context?.close();
-      context = null;
-      initialized = false;
+      try { noise?.stop(); } catch {}
+      try { pad?.dispose(); } catch {}
+      try { chime?.dispose(); } catch {}
+      try { padReverb?.dispose(); } catch {}
+      try { padFilter?.dispose(); } catch {}
+      try { noiseFilter?.dispose(); } catch {}
+      try { noiseGain?.dispose(); } catch {}
     }
 
     return {
       start,
       setSpot,
       pulse,
+      playCatch,
       stop,
-      getContext: () => context,
     };
   }
 
