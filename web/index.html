@@ -48,6 +48,7 @@
             </div>
 
             <div class="fishing-stage" id="fishingStage">
+              <canvas id="oceanCanvas" class="ocean-canvas"></canvas>
               <div class="water-surface"></div>
               <div class="water-rays"></div>
               <div class="water-particles"></div>
@@ -55,6 +56,7 @@
               <div class="spot-label" id="spotLabel">釣り場: 未選択</div>
               <div class="fish-shadow fish-shadow-a"></div>
               <div class="fish-shadow fish-shadow-b"></div>
+              <div class="fish-shadow fish-shadow-c"></div>
               <div class="rod-system" id="rodSystem">
                 <div class="rod-handle"></div>
                 <div class="rod-line"></div>
@@ -119,6 +121,12 @@
       <button id="installBtn">追加</button>
     </div>
 
-    <script src="./app.js" type="module"></script>
+    <script defer src="./js/data.js"></script>
+    <script defer src="./js/storage.js"></script>
+    <script defer src="./js/blue-detector.js"></script>
+    <script defer src="./js/ocean-scene.js"></script>
+    <script defer src="./js/audio.js"></script>
+    <script defer src="./js/motion.js"></script>
+    <script defer src="./js/main.js"></script>
   </body>
 </html>

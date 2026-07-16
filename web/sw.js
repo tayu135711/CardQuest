@@ -1,5 +1,17 @@
-const CACHE_NAME = "cardquest-pwa-v1";
-const FILES_TO_CACHE = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.json"];
+const CACHE_NAME = "cardquest-pwa-v2";
+const FILES_TO_CACHE = [
+  "./",
+  "./index.html",
+  "./styles.css",
+  "./manifest.json",
+  "./js/data.js",
+  "./js/storage.js",
+  "./js/blue-detector.js",
+  "./js/ocean-scene.js",
+  "./js/audio.js",
+  "./js/motion.js",
+  "./js/main.js",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

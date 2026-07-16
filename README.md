@@ -14,6 +14,18 @@ CardQuest is being rebuilt as a PWA so it can run on a smartphone browser and be
 
 The browser app lives in [`web/`](./web/).
 
+### Current Structure
+
+- `web/index.html` - main shell
+- `web/styles.css` - underwater UI and layout
+- `web/js/data.js` - spots and fish data
+- `web/js/ocean-scene.js` - animated ocean canvas
+- `web/js/audio.js` - ambient underwater audio
+- `web/js/motion.js` - tilt and pointer rod control
+- `web/js/blue-detector.js` - blue-object detection
+- `web/js/storage.js` - local save handling
+- `web/js/main.js` - game wiring
+
 ## Run Locally
 
 Serve the `web/` folder with any static server:
