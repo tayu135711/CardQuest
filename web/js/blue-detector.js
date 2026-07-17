@@ -30,7 +30,7 @@
 
         totalPixels += 1;
         blueScoreSum += blueScore;
-        if (blue > 110 && blueScore > 35) {
+        if (blue > 90 && blueScore > 22) {
           bluePixels += 1;
         }
       }
@@ -41,7 +41,7 @@
     const blueRatio = bluePixels / totalPixels;
     const averageBlueScore = blueScoreSum / totalPixels;
 
-    if (blueRatio < 0.12 || averageBlueScore < 18) {
+    if (blueRatio < 0.07 || averageBlueScore < 11) {
       return null;
     }
 

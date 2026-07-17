@@ -1,4 +1,4 @@
-const CACHE_NAME = "cardquest-pwa-v5";
+const CACHE_NAME = "cardquest-pwa-v7";
 const FILES_TO_CACHE = [
   "./",
   "./index.html",

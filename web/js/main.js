@@ -27,6 +27,7 @@
     catchCutin: document.getElementById("catchCutin"),
     cutinFishName: document.getElementById("cutinFishName"),
     cutinSpotName: document.getElementById("cutinSpotName"),
+    spotPicker: document.getElementById("spotPicker"),
   };
 
   const state = {
@@ -266,6 +267,7 @@
     updateStageAppearance(state.currentSpot);
     pulseScene(0.3);
     updateMeter();
+    updateSpotPickerActive(null);
   }
 
   function reel() {
@@ -444,6 +446,25 @@
     }
   }
 
+  function updateSpotPickerActive(spotId) {
+    if (!els.spotPicker) {
+      return;
+    }
+    const buttons = els.spotPicker.querySelectorAll("button[data-spot]");
+    for (const btn of buttons) {
+      btn.classList.toggle("active", btn.dataset.spot === spotId);
+    }
+  }
+
+  function pickSpotManually(spotId) {
+    const spot = data.spots.find((item) => item.id === spotId);
+    if (!spot) {
+      return;
+    }
+    beginFishing(spot);
+    updateSpotPickerActive(spotId);
+  }
+
   function bindEvents() {
     els.enableCameraBtn.addEventListener("click", startCamera);
     els.scanBtn.addEventListener("click", () => analyzeCameraFrame(false));
@@ -456,6 +477,16 @@
     els.skipBtn.addEventListener("click", resetGame);
     els.installBtn.addEventListener("click", installApp);
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    if (els.spotPicker) {
+      els.spotPicker.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-spot]");
+        if (!button) {
+          return;
+        }
+        pickSpotManually(button.dataset.spot);
+      });
+    }
   }
 
   function bootstrap() {
